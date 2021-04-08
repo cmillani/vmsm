@@ -1,4 +1,5 @@
 from flask import Blueprint
+from os import environ
 import libvirt
 
 videogame_route = Blueprint('videogame', __name__)
@@ -16,21 +17,35 @@ def turnGameOff():
     error = domain.shutdown()
     return parseVmPowerActionError(error)
 
+@videogame_route.route('/videogame', methods=['GET'])
+def getVmStatus():
+    domain = getDomain()
+    return "ON" if domain.isActive() else "OFF" 
+
 def parseVmPowerActionError(error):
     if (not error):
         return 'OK'
     else:
         return error, 500
 
-
 def getDomain():
     global conn
-    if(conn == None or not conn.isAlive()):
+    if(conn is None or not conn.isAlive()):
         print("Connecting to remote QEMU")
-        # TODO: KEYFILE should be env var to be configurable from docker
-        conn = libvirt.open('qemu+ssh://carlos@192.168.1.6/system?keyfile=/home/carlos/.ssh/id_rsa')
+        conn = libvirt.open(getConnectionString())
         print("Connected!")
-    # TODO: Name should be env var
-    domain = conn.lookupByName('debtest')
+    domain = conn.lookupByName(getVmName())
     return domain
+
+def getConnectionString():
+    return tryGetConfig('CONNSTRING')
+
+def getVmName():
+    return tryGetConfig('VMNAME')
+
+def tryGetConfig(name):
+    config = environ.get(name)
+    if (config is None):
+        raise Exception(f'Config <{name}> not defined')
+    return config 
 
