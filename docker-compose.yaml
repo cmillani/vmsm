@@ -5,10 +5,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: cmillani/vmsm
+    image: cmillani/vmsm:1.0.0
     container_name: vmsm
     ports:
       - "5000:5000"
     environment:
-      - CONNSTRING=qemu+ssh://carlos@192.168.1.6/system?keyfile=/home/carlos/.ssh/id_rsa
+      - CONNSTRING=qemu+ssh://carlos@192.168.1.6/system?keyfile=/ssh/id_rsa&no_verify=1
       - VMNAME=debtest
+    volumes:
+      - /Users/carlos/.ssh/:/ssh
+      

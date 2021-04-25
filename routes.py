@@ -1,31 +1,38 @@
-from flask import Blueprint
+from flask import Blueprint, request
 from os import environ
 import libvirt
 
 videogame_route = Blueprint('videogame', __name__)
-conn = None;
+conn = None
 
-@videogame_route.route('/videogame/turnon', methods=['POST'])
+@videogame_route.route('/videogame', methods=['POST'])
 def turnGameOn():
+    body = request.get_json()
+    isActive = body["active"]
+
     domain = getDomain()
-    error = domain.create()
+    error = None
+    if isActive:
+        error = domain.create()
+        print("Turn ON")
+    else:
+        error = domain.shutdown()
+        print("Turn OFF")
+    
     return parseVmPowerActionError(error)
 
-@videogame_route.route('/videogame/turnoff', methods=['POST'])
-def turnGameOff():
-    domain = getDomain()
-    error = domain.shutdown()
-    return parseVmPowerActionError(error)
 
 @videogame_route.route('/videogame', methods=['GET'])
 def getVmStatus():
     domain = getDomain()
-    return "ON" if domain.isActive() else "OFF" 
+    isActive = domain.isActive()
+    return {"is_active": isActive == 1}, 200
 
 def parseVmPowerActionError(error):
     if (not error):
         return 'OK'
     else:
+        print(error)
         return error, 500
 
 def getDomain():
